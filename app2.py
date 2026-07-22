@@ -68,33 +68,19 @@ def generate_menu_png(menu_text, filename="generated_menu.png"):
 def run_agent(agent1_output, design_request):
 
     system_message = """
-    Your name is Ramsay. You design professional menus for restaurants.
-    Always be professional and polite.
-    Always focus exclusively on menu design.
-    Never change dishes, prices, or ingredients.
-    Only design the menu based on Agent 1's output.
+    Your name is Ramsay.
+    You design professional restaurant menus.
+
+    You ONLY design the menu.
+    Never change dishes.
+    Never change ingredients.
+    Never change prices.
+
+    Use the menu created by Agent 1.
     """
 
     history = [
         {
-            response = client.messages.create(
-            model='claude-haiku-4-5-20251001',
-            max_tokens=1400,
-            temperature=0.7,
-            system=system_message,
-            messages=history
-        )
-
-        reply = response.content[0].text
-
-        if "[MENU_START]" in reply and "[MENU_END]" in reply:
-            start_idx = reply.find("[MENU_START]") + len("[MENU_START]")
-            end_idx = reply.find("[MENU_END]")
-            menu_raw_content = reply[start_idx:end_idx].strip()
-
-            # Generate PNG instead of PDF
-            generate_menu_png(menu_raw_content)
-            
             "role": "user",
             "content": f"""
 This menu was created by Agent 1:
@@ -105,14 +91,38 @@ The user wants this design:
 
 {design_request}
 
-Use ONLY the menu created by Agent 1.
-Do not create new dishes.
-Do not change prices.
-Only design the menu.
+Create a professional menu layout.
+
+When you output the final menu, wrap ONLY the menu inside:
+
+[MENU_START]
+
+...
+
+[MENU_END]
 """
-return reply
         }
     ]
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1400,
+        temperature=0.7,
+        system=system_message,
+        messages=history
+    )
+
+    reply = response.content[0].text
+
+    if "[MENU_START]" in reply and "[MENU_END]" in reply:
+        start = reply.find("[MENU_START]") + len("[MENU_START]")
+        end = reply.find("[MENU_END]")
+
+        menu = reply[start:end].strip()
+
+        generate_menu_png(menu)
+
+    return reply
 
 def run_chat():
     print('You: (type exit to quit)')
@@ -188,7 +198,8 @@ def run_chat():
             # Generate PNG instead of PDF
             generate_menu_png(menu_raw_content)
 
-run_chat()
+if __name__ == "__main__":
+    run_chat()
 
 #------HTTP (HyperText Transfer Protocol)-------
 # HTTP is the official, agreed-upon language that web browsers and servers use to talk to each other.
